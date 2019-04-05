@@ -2,7 +2,6 @@
 
 int main()
 {
-  char* buf2 = malloc(2096* sizeof(char));
   int readBytes;
   int events;
   fd_set readset;
@@ -37,14 +36,15 @@ int main()
   
   printf("Enter name:");
   scanf("%s", nickname);
+  fflush(stdout);
   
   sendEntry(serverFD, nickname, peerAddr);
   
   FD_ZERO(&readset);
-
+unsigned int len;
    while(1)
    {
-     
+     char* buf2 = malloc(2096* sizeof(char));
      FD_SET(serverFD, &readset);
      FD_SET(0, &readset);
      
@@ -56,11 +56,13 @@ int main()
      if(FD_ISSET(STDIN_FILENO,&readset))
      {
 //        memset(&buf2, 0, sizeof(buf2));
-	readBytes = read(STDIN_FILENO, buf2, 2096);
+	//readBytes = read(STDIN_FILENO, buf2, 2096);
+              getline(&buf2, &len, stdin);
 	//printf("readBytes %d\n", readBytes);
 	//printf("Ich: %s", buf2);
 	sendMsg(serverFD, nickname, buf2, peerAddr);
      }
+     free(buf2);
    }
     
    
@@ -72,17 +74,16 @@ void recvPeerMsg(int fd)
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
     
  // memset(&buf, 0, sizeof(buf));
-  struct sockaddr peerAddr;
-  memset(&peerAddr, 0, sizeof(peerAddr));
+  struct sockaddr* peerAddr = malloc(sizeof(struct sockaddr));
+  //memset(&peerAddr, 0, sizeof(peerAddr));
   unsigned int peerAddrlen;
-  peerAddrlen = sizeof(peerAddr);
+  peerAddrlen = sizeof(*peerAddr);
   int recvBytes;
-  recvBytes = recvfrom(fd, (struct chatPDU*)pCurrMsg, sizeof(*pCurrMsg), 0, &peerAddr, &peerAddrlen);
+  recvBytes = recvfrom(fd, (struct chatPDU*)pCurrMsg, sizeof(*pCurrMsg), 0, peerAddr, &peerAddrlen);
   if(recvBytes < 0)
   {
     perror("recvfrom:");
   }
-  
   if(pCurrMsg->typ == ENTRY)
   {
   printf("%s ist dem Chat beigetreten\n", pCurrMsg->name);
@@ -90,15 +91,15 @@ void recvPeerMsg(int fd)
   else
   {
   printf("%s: %s", pCurrMsg->name, pCurrMsg->msg);
-  //printf("recv %d bytes\n", recvBytes);
   }
+  //printf("recv %d bytes\n", recvBytes);
   free(pCurrMsg);
 }
 
 void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
 {
   int sendbytes;
-  //printf("sizeof buf %d\n", sizeof(buf2));
+  //printf("sizeof buf %d\n", sizeof(*buf2));
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
   strncpy(pCurrMsg->msg, buf2, 2096);
   strncpy(pCurrMsg->name, nickname, 13);
