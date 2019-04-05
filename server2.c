@@ -106,6 +106,7 @@ void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
   strncpy(pCurrMsg->msg, buf2, 2096);
   strncpy(pCurrMsg->name, nickname, 13);
+  pCurrMsg->typ = MSG;
   sendbytes = sendto(fd, (const struct chatPDU*)pCurrMsg, sizeof(*pCurrMsg), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
   if(sendbytes < 0)
   {
@@ -121,6 +122,7 @@ void sendEntry(int fd, char nickname[13], struct sockaddr_in peerAddr)
   struct chatPDU* pEntryMsg = malloc(sizeof(struct chatPDU));
   pEntryMsg->typ = ENTRY;
   strncpy(pEntryMsg->name, nickname, 13);
+  //pEntryMsg->msg = 
   sendbytes = sendto(fd, (const struct chatPDU*)pEntryMsg, sizeof(*pEntryMsg), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
   if(sendbytes < 0)
   {
