@@ -1,7 +1,14 @@
 #include "chatLib.h"
 
-int main()
+int main(int argc, char *argv[])
 {
+  if ( argv[1] == 0 )
+    printf("no port specified\n");
+
+//    printf("The following arguments were passed to main(): ");
+//    for(i=1; i<argc; i++) printf("%s ", argv[i]);
+//    {printf("\n"); 
+//    }
   int readBytes;
   int events;
   fd_set readset;
@@ -9,8 +16,23 @@ int main()
   unsigned int nameLen;
   size_t nameChars = 0;
   unsigned int len;
+  unsigned int localPort;
+  unsigned int peerPorts[9];
+  int i;
   
   nickname = malloc( 13*sizeof(char));
+  
+  //setup port as server and peer ports
+  localPort = atoi(argv[1]);
+//    printf("localPort is %d\n", localPort); 
+  for (i = 0; i < 10; i++)
+  {
+    if(ports[i] != localPort)
+    {
+      peerPorts[i] = ports[i];
+//      printf("Port %d added to peerPorts\n", peerPorts[i]);
+    }
+  }
   
   //server part
   int serverFD = socket( AF_INET, SOCK_DGRAM, 0);
