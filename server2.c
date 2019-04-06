@@ -5,9 +5,14 @@ int main()
   int readBytes;
   int events;
   fd_set readset;
-  char nickname[13];
+  char* nickname; 
   int serverFD = 0;
+  int peerFD = 0;
+  unsigned int nameLen;
+  size_t nameChars = 0;
+  unsigned int len;
   
+  nickname = malloc( 13*sizeof(char));
   //server part
   if ((	serverFD = socket( AF_INET, SOCK_DGRAM, 0)) == -1)
   {
@@ -31,27 +36,26 @@ int main()
   
   
   //peer part
-  int peerFD = socket( AF_INET, SOCK_DGRAM, 0);
+  peerFD = socket( AF_INET, SOCK_DGRAM, 0);
   struct sockaddr_in peerAddr;
   memset(&peerAddr, 0, sizeof(peerAddr));
   peerAddr.sin_family = AF_INET;
   peerAddr.sin_port = htons(3000);
   peerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
   //peer part end
-  
+
+  //get user input
   printf("Enter name:");
-  scanf("%s", nickname);
-    fflush(stdout);
+  nameChars = getline(&nickname, &nameLen, stdin);
+  //printf("length of name is %d\n", nameChars);
   
   sendEntry(serverFD, nickname, peerAddr);
   
   FD_ZERO(&readset);
-unsigned int len;
+
    while(1)
    {
      char* buf2 = malloc(2096* sizeof(char));
-//      printf("sizeof buf %d\n", sizeof(buf2));
-
      FD_SET(serverFD, &readset);
      FD_SET(0, &readset);
      
@@ -62,12 +66,10 @@ unsigned int len;
      }
      if(FD_ISSET(STDIN_FILENO,&readset))
      {
-//        memset(&buf2, 0, 2096);
-	//readBytes = read(STDIN_FILENO, buf2, 2096);
-       getline(&buf2, &len, stdin);
-//printf("readBytes %d\n", readBytes);
-	//printf("Ich: %s", buf2);
-	sendMsg(serverFD, nickname, buf2, peerAddr);
+       size_t chars = 0;
+       chars = getline(&buf2, &len, stdin);
+       //printf("chars no %d\n", chars);
+       sendMsg(serverFD, nickname, buf2, peerAddr);
      }
      free(buf2);
    } 
@@ -77,18 +79,25 @@ unsigned int len;
 void recvPeerMsg(int fd)
 {
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
-  memset(pCurrMsg->msg, 0, sizeof(pCurrMsg->msg));
   struct sockaddr* peerAddr = malloc(sizeof(struct sockaddr));
-  memset(&peerAddr, 0, sizeof(peerAddr));
   unsigned int peerAddrlen;
-  peerAddrlen = sizeof(*peerAddr);
   int recvBytes;
+    
+  peerAddrlen = sizeof(*peerAddr);
   recvBytes = recvfrom(fd, (struct chatPDU*)pCurrMsg, sizeof(*pCurrMsg), 0, peerAddr, &peerAddrlen);
   if(recvBytes < 0)
   {
     perror("recvfrom:");
   }
   
+  // cut of \n from name 
+  int strLen = strlen(pCurrMsg->name);
+  if (pCurrMsg->name[strLen-1] == '\n')
+  {
+    pCurrMsg->name[strLen-1] = 0;
+  }
+  
+  //printf("typ is %d, name is %s, msg is %s", pCurrMsg->typ, pCurrMsg->name, pCurrMsg->msg);
   if(pCurrMsg->typ == ENTRY)
   {
   printf("%s ist dem Chat beigetreten\n", pCurrMsg->name);
@@ -103,9 +112,10 @@ void recvPeerMsg(int fd)
 
 void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
 {
+//    printf("send\n");
   int sendbytes;
-  //printf("sizeof buf %d\n", sizeof(*buf2));
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
+  
   strncpy(pCurrMsg->msg, buf2, 2096);
   strncpy(pCurrMsg->name, nickname, 13);
   pCurrMsg->typ = MSG;
@@ -116,16 +126,15 @@ void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
   }
   //printf("send %d bytes\n", sendbytes);
   free(pCurrMsg);
-   //memset(&buf2, 0, 2096);
 }
 
 void sendEntry(int fd, char nickname[13], struct sockaddr_in peerAddr)
 {
+//  printf("entry\n");
   int sendbytes;
   struct chatPDU* pEntryMsg = malloc(sizeof(struct chatPDU));
   pEntryMsg->typ = ENTRY;
   strncpy(pEntryMsg->name, nickname, 13);
-  //pEntryMsg->msg = 
   sendbytes = sendto(fd, (const struct chatPDU*)pEntryMsg, sizeof(*pEntryMsg), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
   if(sendbytes < 0)
   {

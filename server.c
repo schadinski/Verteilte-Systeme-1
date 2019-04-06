@@ -5,7 +5,12 @@ int main()
   int readBytes;
   int events;
   fd_set readset;
-  char nickname[13];
+  char* nickname;
+  unsigned int nameLen;
+  size_t nameChars = 0;
+  unsigned int len;
+  
+  nickname = malloc( 13*sizeof(char));
   
   //server part
   int serverFD = socket( AF_INET, SOCK_DGRAM, 0);
@@ -34,14 +39,15 @@ int main()
   peerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
   //peer part end
   
+  //get user input
   printf("Enter name:");
-  scanf("%s", nickname);
-  fflush(stdout);
+  nameChars = getline(&nickname, &nameLen, stdin);
+//TODO: Errorhandling input == 0
   
   sendEntry(serverFD, nickname, peerAddr);
   
   FD_ZERO(&readset);
-unsigned int len;
+  
    while(1)
    {
      char* buf2 = malloc(2096* sizeof(char));
@@ -55,11 +61,7 @@ unsigned int len;
      }
      if(FD_ISSET(STDIN_FILENO,&readset))
      {
-//        memset(&buf2, 0, sizeof(buf2));
-	//readBytes = read(STDIN_FILENO, buf2, 2096);
-              getline(&buf2, &len, stdin);
-	//printf("readBytes %d\n", readBytes);
-	//printf("Ich: %s", buf2);
+	getline(&buf2, &len, stdin);
 	sendMsg(serverFD, nickname, buf2, peerAddr);
      }
      free(buf2);
@@ -71,19 +73,27 @@ unsigned int len;
 
 void recvPeerMsg(int fd)
 {
-  struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
-    
- // memset(&buf, 0, sizeof(buf));
-  struct sockaddr* peerAddr = malloc(sizeof(struct sockaddr));
-  //memset(&peerAddr, 0, sizeof(peerAddr));
   unsigned int peerAddrlen;
-  peerAddrlen = sizeof(*peerAddr);
   int recvBytes;
+    
+  struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
+  struct sockaddr* peerAddr = malloc(sizeof(struct sockaddr));
+
+  peerAddrlen = sizeof(*peerAddr);
   recvBytes = recvfrom(fd, (struct chatPDU*)pCurrMsg, sizeof(*pCurrMsg), 0, peerAddr, &peerAddrlen);
   if(recvBytes < 0)
   {
     perror("recvfrom:");
   }
+  
+  // cut of \n from name  
+  int strLen = strlen(pCurrMsg->name);
+  if (pCurrMsg->name[strLen-1] == '\n')
+  {
+    pCurrMsg->name[strLen-1] = 0;
+  }
+  
+//   printf("typ is %d, name is %s, msg is %s", pCurrMsg->typ, pCurrMsg->name, pCurrMsg->msg);
   if(pCurrMsg->typ == ENTRY)
   {
   printf("%s ist dem Chat beigetreten\n", pCurrMsg->name);
@@ -98,6 +108,7 @@ void recvPeerMsg(int fd)
 
 void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
 {
+//  printf("send\n");
   int sendbytes;
   //printf("sizeof buf %d\n", sizeof(*buf2));
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
@@ -115,6 +126,7 @@ void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
 
 void sendEntry(int fd, char nickname[13], struct sockaddr_in peerAddr)
 {
+//  printf("entry\n");
   int sendbytes;
   struct chatPDU* pEntryMsg = malloc(sizeof(struct chatPDU));
   pEntryMsg->typ = ENTRY;
