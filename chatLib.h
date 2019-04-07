@@ -24,10 +24,14 @@ static unsigned short ports[10] = { 1050,
 
 # define MAXPEERS 2
 
-//[0] = suseVM
-//[1] = ubuntuVM HP Laptop
+//192.168.178.71 = suseVM, enp0s8
+//192.168.216.162 = ubuntuVM HP Laptop
+//10.0.2.15 = suseVM, eth0
+//192.168.178.81 = Ubuntu Fujitsu Laptop
 static char* ips[2] = { "192.168.178.71",
-  "192.168.216.162"
+  //"192.168.216.162"
+  //"10.0.2.15",
+  "192.168.178.81"
 };
 
 

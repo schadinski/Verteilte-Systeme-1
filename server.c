@@ -2,6 +2,7 @@
 
 int main(int argc, char *argv[])
 {
+  printf("first line \n");
   if ( argv[1] == 0 )
     printf("no port specified\n");
 
@@ -17,33 +18,36 @@ int main(int argc, char *argv[])
   size_t len;
   unsigned int localPort =3000;
 //  unsigned int peerPorts[9];
-  char* peerIPs[MAXPEERS-1];
+//  char* peerIPs[MAXPEERS-1];
   int i;
-  int peerFDs[MAXPEERS-1];
-  struct sockaddr_in allPeerAddrs[9];
+  int peerFDs[MAXPEERS];
+  struct sockaddr_in allPeerAddrs[MAXPEERS];
   char* myIP;
+  int localFD;
   
+  printf("after var init\n");
   nickname = malloc( 13*sizeof(char));
-  
+  //allPeerAddrs = (struct sockaddr_in)malloc(MAXPEERS*sizeof(struct sockaddr_in));
+  printf("after malloc nickname\n");
   //setup port as server and peer ports
 //  localPort = atoi(argv[1]);
-  strcpy(myIP, argv[1]);
+  //strcpy(myIP, argv[1]);
+  printf("after strcpy myIP\n");
 //    printf("localPort is %d\n", localPort); 
-  for (i = 0; i < MAXPEERS; i++)
+/*  for (i = 0; i < MAXPEERS; i++)
   {
-/*    if(ports[i] != localPort)
+    if(strcmp(ips[i],myIP) != 0)
     {
-      peerPorts[i] = ports[i];
-//      printf("Port %d added to peerPorts\n", peerPorts[i]);
+      peerIPs[i]= ips[i];
     }
-    */
-  if(strcmp(ips[i],myIP))
-  {
-    peerIPs[i]= ips[i];
-  }
-  }
+    else
+    {
+      
+    }
+  
+  }*/
   //server part
-  int serverFD = socket( AF_INET, SOCK_DGRAM, 0);
+/*  int serverFD = socket( AF_INET, SOCK_DGRAM, 0);
   if(serverFD < 0)
   {
     perror(" socket serverFD:");
@@ -57,27 +61,32 @@ int main(int argc, char *argv[])
   int rc = bind(serverFD, (struct sockaddr*)&localAddr, sizeof(localAddr));
   if (rc < 0)
   {
-    printf("Error: Bind 1 FD\n");
+    printf("Error: Bind local FD\n");
     perror("bind()");
-    rc = 0;
-  }
+ //   rc = 0;
+  }*/
   //server part end
-  
+  printf("start\n");
   // setup all peer addresses
-  for(i = 0; i <(MAXPEERS-1); i++)
+  for(i = 0; i < MAXPEERS; i++)
   {
-  //peer part
-  peerFDs[i] = socket( AF_INET, SOCK_DGRAM, 0);
-  if(peerFDs[i] < 0)
-  {
-    perror(" socket serverFD:");
-  }
-//  allPeerAddrs[i] = (struct sockaddr_in)malloc(sizeof(struct sockaddr_in));
-  memset(&allPeerAddrs[i], 0, sizeof(allPeerAddrs[i]));
-  allPeerAddrs[i].sin_family = AF_INET;
-  allPeerAddrs[i].sin_port = htons(3000);
-  allPeerAddrs[i].sin_addr.s_addr = inet_addr(peerIPs[i]);
-  //peer part end
+    //peer part
+    peerFDs[i] = socket( AF_INET, SOCK_DGRAM, 0);
+    if(peerFDs[i] < 0)
+    {
+      printf("Error: socket peerFDs[%d]\n", i);
+      perror("socket peerFDs:");
+    }
+    allPeerAddrs[i] = *(struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
+    memset(&allPeerAddrs[i], 0, sizeof(allPeerAddrs[i]));
+    allPeerAddrs[i].sin_family = AF_INET;
+    allPeerAddrs[i].sin_port = htons(localPort);
+    allPeerAddrs[i].sin_addr.s_addr = inet_addr(ips[i]);
+    if(strcmp(ips[i],argv[1]) == 0)
+    {
+      localFD = peerFDs[i];
+    }
+    //peer part end
   }
   
   // setup all peer addresses
@@ -102,45 +111,45 @@ int main(int argc, char *argv[])
   nameChars = getline(&nickname, &nameLen, stdin);
 //TODO: Errorhandling input == 0
   
-  for(i=0; i<(MAXPEERS-1); i++)
+  for(i=0; i<(MAXPEERS); i++)
   {
-  sendEntry(serverFD, nickname, allPeerAddrs[i]);
+  sendEntry(localFD, nickname, allPeerAddrs[i]);
   }
   FD_ZERO(&readset);
   
    while(1)
    {
      char* buf2 = malloc(2096* sizeof(char));
-     FD_SET(serverFD, &readset);
+     FD_SET(localFD, &readset);
      FD_SET(0, &readset);
      
-     events = select(serverFD+1, &readset, 0, 0, 0);
-     if(FD_ISSET(serverFD,&readset))
+     events = select(localFD+1, &readset, 0, 0, 0);
+     if(FD_ISSET(localFD,&readset))
      {    
-	recvPeerMsg(serverFD);
+	recvPeerMsg(localFD);
      }
      if(FD_ISSET(STDIN_FILENO,&readset))
      {
        getline(&buf2, &len, stdin);
        if(strstr(buf2, "!Exit"))
        {
-	 for(i=0;i<(MAXPEERS-1);i++)
+	 for(i=0;i<(MAXPEERS);i++)
 	 {
-	 sendExit(serverFD, nickname, allPeerAddrs[i]);
+	 sendExit(localFD, nickname, allPeerAddrs[i]);
 	 }
 	 break;
        }
        else
        {
-	  for(i=0;i<(MAXPEERS-1);i++)
+	  for(i=0;i<(MAXPEERS);i++)
 	  { 
-	    sendMsg(serverFD, nickname, buf2, allPeerAddrs[i]);
+	    sendMsg(localFD, nickname, buf2, allPeerAddrs[i]);
 	  }
        }
      }
      free(buf2);
    }
- for(i=0; i<(MAXPEERS-1);i++)
+ for(i=0; i<(MAXPEERS);i++)
  {
    close(peerFDs[i]);
  }

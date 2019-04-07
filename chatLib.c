@@ -40,7 +40,7 @@ void recvPeerMsg(int fd)
 
 void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
 {
-//    printf("send\n");
+    printf("send\n");
   int sendbytes;
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
   
@@ -58,7 +58,7 @@ void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
 
 void sendEntry(int fd, char nickname[13], struct sockaddr_in peerAddr)
 {
-//  printf("entry\n");
+  printf("entry\n");
   int sendbytes;
   struct chatPDU* pEntryMsg = malloc(sizeof(struct chatPDU));
   
@@ -75,7 +75,7 @@ void sendEntry(int fd, char nickname[13], struct sockaddr_in peerAddr)
 
 void sendExit(int fd, char nickname[13], struct sockaddr_in peerAddr)
 {
-  //  printf("exit\n");
+    printf("exit\n");
   int sendbytes;
   struct chatPDU* pExitMsg = malloc(sizeof(struct chatPDU));
   pExitMsg->typ = EXIT;
