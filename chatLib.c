@@ -1,9 +1,17 @@
+// Hinweise: 
+
+// * Hier gibt es sicherlich optimierungsmöglichkeiten, z.B. sind 
+//   alle drei send-Funktionen sehr ähnlich.
+
+// * Debugging-Statements verbleiben im Code, da diese für Teil 2
+//   nützlich sein werden.
+
 #include "chatLib.h"
 
-// gcc -o chatLib.o -c chatLib.c
-
+// setup memory, filter msg type and output
 void recvPeerMsg(int fd)
 {
+//  printf("recvfrom\n");
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
   struct sockaddr* peerAddr = malloc(sizeof(struct sockaddr));
   unsigned int peerAddrlen;
@@ -38,9 +46,10 @@ void recvPeerMsg(int fd)
   free(pCurrMsg);
 }
 
+// setup memory and PDU, send
 void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
 {
-    printf("send\n");
+//  printf("send\n");
   int sendbytes;
   struct chatPDU* pCurrMsg = malloc(sizeof(struct chatPDU));
   
@@ -52,30 +61,33 @@ void sendMsg(int fd, char nickname[13], char* buf2, struct sockaddr_in peerAddr)
   {
     perror("sendMsg sendto:");
   }
-  //printf("send %d bytes\n", sendbytes);
+//  printf("Msg: send %d bytes\n", sendbytes);
   free(pCurrMsg);
 }
 
+// setup memory and PDU, send
 void sendEntry(int fd, char nickname[13], struct sockaddr_in peerAddr)
 {
-  printf("entry\n");
+//  printf("entry\n");
   int sendbytes;
-  struct chatPDU* pEntryMsg = malloc(sizeof(struct chatPDU));
-  
+  struct chatPDU* pEntryMsg = (struct chatPDU*)malloc(sizeof(struct chatPDU));
+    
   pEntryMsg->typ = ENTRY;
   strncpy(pEntryMsg->name, nickname, 13);
+  
   sendbytes = sendto(fd, (const struct chatPDU*)pEntryMsg, sizeof(*pEntryMsg), 0, (struct sockaddr*)&peerAddr, sizeof(peerAddr));
   if(sendbytes < 0)
   {
     perror("sendEntry sendto:");
   }
-  //printf("send %d bytes\n", sendbytes);
+//  printf("Entry: send %d bytes\n", sendbytes);
   free(pEntryMsg);
 }
 
+// setup memory and PDU, send
 void sendExit(int fd, char nickname[13], struct sockaddr_in peerAddr)
 {
-    printf("exit\n");
+//  printf("exit\n");
   int sendbytes;
   struct chatPDU* pExitMsg = malloc(sizeof(struct chatPDU));
   pExitMsg->typ = EXIT;
@@ -85,6 +97,6 @@ void sendExit(int fd, char nickname[13], struct sockaddr_in peerAddr)
   {
     perror("sendExit sendto:");
   }
-  //printf("send %d bytes\n", sendbytes);
+//  printf("Exit: send %d bytes\n", sendbytes);
   free(pExitMsg);
 }

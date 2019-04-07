@@ -21,18 +21,16 @@ static unsigned short ports[10] = { 1050,
 				    1450,
 				    1500 };
 				    */
-
 # define MAXPEERS 2
 
-//192.168.178.71 = suseVM, enp0s8
+//192.168.178.21 = suseVM, home
 //192.168.216.162 = ubuntuVM HP Laptop
 //10.0.2.15 = suseVM, eth0
 //192.168.178.81 = Ubuntu Fujitsu Laptop
-static char* ips[2] = { "192.168.178.71",
-  //"192.168.216.162"
-  //"10.0.2.15",
-  "192.168.178.81"
-};
+static char* ips[2] = { "192.168.178.21",
+  //			"192.168.216.162"
+  //			"10.0.2.15",
+			"192.168.178.81" };
 
 
 typedef enum{
