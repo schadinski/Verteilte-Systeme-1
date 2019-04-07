@@ -9,38 +9,50 @@ int main(int argc, char *argv[])
 //    for(i=1; i<argc; i++) printf("%s ", argv[i]);
 //    {printf("\n"); 
 //    }
-  int readBytes;
   int events;
   fd_set readset;
   char* nickname;
-  unsigned int nameLen;
-  size_t nameChars = 0;
-  unsigned int len;
-  unsigned int localPort;
-  unsigned int peerPorts[9];
+  size_t nameLen;
+  size_t nameChars;
+  size_t len;
+  unsigned int localPort =3000;
+//  unsigned int peerPorts[9];
+  char* peerIPs[MAXPEERS-1];
   int i;
+  int peerFDs[MAXPEERS-1];
+  struct sockaddr_in allPeerAddrs[9];
+  char* myIP;
   
   nickname = malloc( 13*sizeof(char));
   
   //setup port as server and peer ports
-  localPort = atoi(argv[1]);
+//  localPort = atoi(argv[1]);
+  strcpy(myIP, argv[1]);
 //    printf("localPort is %d\n", localPort); 
-  for (i = 0; i < 10; i++)
+  for (i = 0; i < MAXPEERS; i++)
   {
-    if(ports[i] != localPort)
+/*    if(ports[i] != localPort)
     {
       peerPorts[i] = ports[i];
 //      printf("Port %d added to peerPorts\n", peerPorts[i]);
     }
+    */
+  if(strcmp(ips[i],myIP))
+  {
+    peerIPs[i]= ips[i];
   }
-  
+  }
   //server part
   int serverFD = socket( AF_INET, SOCK_DGRAM, 0);
+  if(serverFD < 0)
+  {
+    perror(" socket serverFD:");
+  }
   struct sockaddr_in localAddr;
   memset(&localAddr, 0, sizeof(localAddr));
   localAddr.sin_family = AF_INET;
-  localAddr.sin_port = htons(3000);
-  localAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  localAddr.sin_port = htons(localPort);
+  localAddr.sin_addr.s_addr = inet_addr(myIP);
       
   int rc = bind(serverFD, (struct sockaddr*)&localAddr, sizeof(localAddr));
   if (rc < 0)
@@ -51,23 +63,49 @@ int main(int argc, char *argv[])
   }
   //server part end
   
-  
+  // setup all peer addresses
+  for(i = 0; i <(MAXPEERS-1); i++)
+  {
   //peer part
-  int peerFD = socket( AF_INET, SOCK_DGRAM, 0);
-  struct sockaddr_in peerAddr;
-  memset(&peerAddr, 0, sizeof(peerAddr));
-  peerAddr.sin_family = AF_INET;
-  peerAddr.sin_port = htons(2000);
-  peerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  peerFDs[i] = socket( AF_INET, SOCK_DGRAM, 0);
+  if(peerFDs[i] < 0)
+  {
+    perror(" socket serverFD:");
+  }
+//  allPeerAddrs[i] = (struct sockaddr_in)malloc(sizeof(struct sockaddr_in));
+  memset(&allPeerAddrs[i], 0, sizeof(allPeerAddrs[i]));
+  allPeerAddrs[i].sin_family = AF_INET;
+  allPeerAddrs[i].sin_port = htons(3000);
+  allPeerAddrs[i].sin_addr.s_addr = inet_addr(peerIPs[i]);
   //peer part end
+  }
   
+  // setup all peer addresses
+/*  for(i = 0; i <9; i++)
+  {
+  //peer part
+  peerFDs[i] = socket( AF_INET, SOCK_DGRAM, 0);
+  if(peerFDs[i] < 0)
+  {
+    perror(" socket serverFD:");
+  }
+//  allPeerAddrs[i] = (struct sockaddr_in)malloc(sizeof(struct sockaddr_in));
+  memset(&allPeerAddrs[i], 0, sizeof(allPeerAddrs[i]));
+  allPeerAddrs[i].sin_family = AF_INET;
+  allPeerAddrs[i].sin_port = htons(peerPorts[i]);
+  allPeerAddrs[i].sin_addr.s_addr = inet_addr("127.0.0.1");
+  //peer part end
+  }
+  */
   //get user input
   printf("Enter name:");
   nameChars = getline(&nickname, &nameLen, stdin);
 //TODO: Errorhandling input == 0
   
-  sendEntry(serverFD, nickname, peerAddr);
-  
+  for(i=0; i<(MAXPEERS-1); i++)
+  {
+  sendEntry(serverFD, nickname, allPeerAddrs[i]);
+  }
   FD_ZERO(&readset);
   
    while(1)
@@ -86,16 +124,27 @@ int main(int argc, char *argv[])
        getline(&buf2, &len, stdin);
        if(strstr(buf2, "!Exit"))
        {
-	 sendExit(serverFD, nickname, peerAddr);
+	 for(i=0;i<(MAXPEERS-1);i++)
+	 {
+	 sendExit(serverFD, nickname, allPeerAddrs[i]);
+	 }
 	 break;
        }
        else
        {
-       sendMsg(serverFD, nickname, buf2, peerAddr);
+	  for(i=0;i<(MAXPEERS-1);i++)
+	  { 
+	    sendMsg(serverFD, nickname, buf2, allPeerAddrs[i]);
+	  }
        }
      }
      free(buf2);
    }
+ for(i=0; i<(MAXPEERS-1);i++)
+ {
+   close(peerFDs[i]);
+ }
+ close(localPort);
  free(nickname);
  return 0;
 }

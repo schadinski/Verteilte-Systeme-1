@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+/*
 static unsigned short ports[10] = { 1050,
 				    1100,
 				    1150,
@@ -19,6 +20,16 @@ static unsigned short ports[10] = { 1050,
 				    1400,
 				    1450,
 				    1500 };
+				    */
+
+# define MAXPEERS 2
+
+//[0] = suseVM
+//[1] = ubuntuVM HP Laptop
+static char* ips[2] = { "192.168.178.71",
+  "192.168.216.162"
+};
+
 
 typedef enum{
   ENTRY,
